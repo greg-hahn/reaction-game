@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reaction Timer | 3D Interactive Game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0F172A;
+            --bg-surface: #1E293B;
+            --text-primary: #F1F5F9;
+            --text-secondary: #94A3B8;
+            --color-ready: #10B981;
+            --color-waiting: #F59E0B;
+            --color-results: #3B82F6;
+            --color-error: #EF4444;
+            --font-heading: 'Outfit', system-ui, sans-serif;
+            --font-body: 'Inter', system-ui, sans-serif;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        header {
+            text-align: center;
+            padding: 1rem 0;
+        }
+
+        h1 {
+            font-family: var(--font-heading);
+            font-size: clamp(1.75rem, 5vw, 2.5rem);
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--color-results), var(--color-ready));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .game-container {
+            background: var(--bg-surface);
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        #game-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .canvas-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .state-message {
+            font-family: var(--font-heading);
+            font-size: clamp(1.5rem, 4vw, 2.25rem);
+            font-weight: 600;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+            transition: opacity 0.3s ease;
+        }
+
+        .state-hint {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .reaction-time {
+            font-family: var(--font-heading);
+            font-size: clamp(3rem, 10vw, 5rem);
+            font-weight: 700;
+            color: var(--color-results);
+            text-shadow: 0 4px 24px rgba(59, 130, 246, 0.4);
+        }
+
+        .reaction-unit {
+            font-size: clamp(1.25rem, 3vw, 1.75rem);
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .false-start-message {
+            color: var(--color-error);
+        }
+
+        .controls {
+            display: flex;
+            gap: 0.75rem;
+            padding: 1.25rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--color-results);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563EB;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(148, 163, 184, 0.1);
+            border-color: rgba(148, 163, 184, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            padding: 0 1.25rem 1.25rem;
+        }
+
+        .stat-card {
+            background: var(--bg-primary);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .stat-value.best {
+            color: var(--color-ready);
+        }
+
+        .stat-value.average {
+            color: var(--color-results);
+        }
+
+        .instructions {
+            background: var(--bg-surface);
+            border-radius: 1rem;
+            padding: 1.5rem;
+        }
+
+        .instructions h2 {
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .instructions-list {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .instruction-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .instruction-number {
+            flex-shrink: 0;
+            width: 1.5rem;
+            height: 1.5rem;
+            background: var(--bg-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--color-results);
+        }
+
+        .state-indicators {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .state-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .indicator-dot {
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 50%;
+        }
+
+        .indicator-dot.waiting {
+            background: var(--color-waiting);
+        }
+
+        .indicator-dot.ready {
+            background: var(--color-ready);
+        }
+
+        .indicator-dot.error {
+            background: var(--color-error);
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 1.5rem 0 0.5rem;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        footer a {
+            color: var(--color-results);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        .history-section {
+            background: var(--bg-surface);
+            border-radius: 1rem;
+            padding: 1.5rem;
+        }
+
+        .history-section h2 {
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .history-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .history-item {
+            background: var(--bg-primary);
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+            font-family: var(--font-body);
+            font-weight: 500;
+        }
+
+        .history-item.good {
+            color: var(--color-ready);
+        }
+
+        .history-item.average {
+            color: var(--color-waiting);
+        }
+
+        .history-item.slow {
+            color: var(--color-error);
+        }
+
+        .empty-history {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0.5rem;
+            }
+
+            .stat-card {
+                padding: 0.75rem 0.5rem;
+            }
+
+            .stat-value {
+                font-size: 1.25rem;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .state-indicators {
+                justify-content: center;
+            }
+        }
+
+        /* Animation for result display */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .pulse {
+            animation: pulse 0.5s ease-out;
+        }
+
+        /* Loading state */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚡ Reaction Timer</h1>
+            <p class="subtitle">Test your reflexes with this interactive 3D challenge</p>
+        </header>
+
+        <main class="game-container">
+            <div class="canvas-wrapper" id="canvas-wrapper">
+                <canvas id="game-canvas"></canvas>
+                <div class="canvas-overlay" id="overlay">
+                    <div id="state-display">
+                        <p class="state-message" id="state-message">Click "Start Game" to begin</p>
+                        <p class="state-hint" id="state-hint">Your reaction time will be measured in milliseconds</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn btn-primary" id="start-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Start Game
+                </button>
+                <button class="btn btn-secondary" id="reset-btn" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                        <path d="M3 3v5h5"></path>
+                    </svg>
+                    Reset Stats
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <p class="stat-label">Attempts</p>
+                    <p class="stat-value" id="attempts">0</p>
+                </div>
+                <div class="stat-card">
+                    <p class="stat-label">Best Time</p>
+                    <p class="stat-value best" id="best-time">— ms</p>
+                </div>
+                <div class="stat-card">
+                    <p class="stat-label">Average</p>
+                    <p class="stat-value average" id="avg-time">— ms</p>
+                </div>
+            </div>
+        </main>
+
+        <section class="history-section">
+            <h2>📊 Recent Results</h2>
+            <div class="history-list" id="history-list">
+                <p class="empty-history">No attempts yet. Start playing to see your history!</p>
+            </div>
+        </section>
+
+        <section class="instructions">
+            <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 16v-4"></path>
+                    <path d="M12 8h.01"></path>
+                </svg>
+                How to Play
+            </h2>
+            <div class="instructions-list">
+                <div class="instruction-item">
+                    <span class="instruction-number">1</span>
+                    <p>Click "Start Game" to begin a new round</p>
+                </div>
+                <div class="instruction-item">
+                    <span class="instruction-number">2</span>
+                    <p>Watch the 3D scene — the shape will turn <strong style="color: var(--color-waiting)">amber</strong> while waiting</p>
+                </div>
+                <div class="instruction-item">
+                    <span class="instruction-number">3</span>
+                    <p>When the shape turns <strong style="color: var(--color-ready)">green</strong>, click anywhere in the game area as fast as you can!</p>
+                </div>
+                <div class="instruction-item">
+                    <span class="instruction-number">4</span>
+                    <p>Don't click too early — false starts will be detected and shown in <strong style="color: var(--color-error)">red</strong></p>
+                </div>
+            </div>
+            <div class="state-indicators">
+                <div class="state-indicator">
+                    <span class="indicator-dot waiting"></span>
+                    <span>Waiting...</span>
+                </div>
+                <div class="state-indicator">
+                    <span class="indicator-dot ready"></span>
+                    <span>Click Now!</span>
+                </div>
+                <div class="state-indicator">
+                    <span class="indicator-dot error"></span>
+                    <span>Too Early!</span>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p>Built with Three.js • <a href="https://github.com" target="_blank" rel="noopener">View Source</a></p>
+        </footer>
+    </div>
+
+    <script>
+        // ==========================================
+        // REACTION TIMER GAME - Three.js Implementation
+        // ==========================================
+
+        (function() {
+            'use strict';
+
+            // ------------------------------------------
+            // Constants & Configuration
+            // ------------------------------------------
+            const CONFIG = {
+                DELAY_MIN: 1000,
+                DELAY_MAX: 5000,
+                COLORS: {
+                    idle: 0x3B82F6,      // Blue
+                    waiting: 0xF59E0B,   // Amber
+                    ready: 0x10B981,     // Green
+                    error: 0xEF4444,     // Red
+                    result: 0x3B82F6,    // Blue
+                    background: 0x0F172A
+                },
+                THRESHOLDS: {
+                    excellent: 200,
+                    good: 300,
+                    average: 400
+                }
+            };
+
+            // ------------------------------------------
+            // Game State
+            // ------------------------------------------
+            const GameState = {
+                IDLE: 'idle',
+                WAITING: 'waiting',
+                READY: 'ready',
+                RESULT: 'result',
+                FALSE_START: 'false_start'
+            };
+
+            // ------------------------------------------
+            // Application State
+            // ------------------------------------------
+            let state = {
+                current: GameState.IDLE,
+                timeoutId: null,
+                startTime: 0,
+                reactionTime: 0,
+                attempts: 0,
+                bestTime: Infinity,
+                totalTime: 0,
+                history: []
+            };
+
+            // ------------------------------------------
+            // Three.js Variables
+            // ------------------------------------------
+            let scene, camera, renderer;
+            let mainShape, particles;
+            let animationFrameId;
+
+            // ------------------------------------------
+            // DOM Elements
+            // ------------------------------------------
+            const elements = {
+                canvas: document.getElementById('game-canvas'),
+                canvasWrapper: document.getElementById('canvas-wrapper'),
+                overlay: document.getElementById('overlay'),
+                stateMessage: document.getElementById('state-message'),
+                stateHint: document.getElementById('state-hint'),
+                startBtn: document.getElementById('start-btn'),
+                resetBtn: document.getElementById('reset-btn'),
+                attemptsDisplay: document.getElementById('attempts'),
+                bestTimeDisplay: document.getElementById('best-time'),
+                avgTimeDisplay: document.getElementById('avg-time'),
+                historyList: document.getElementById('history-list')
+            };
+
+            // ------------------------------------------
+            // Three.js Initialization
+            // ------------------------------------------
+            function initThreeJS() {
+                const wrapper = elements.canvasWrapper;
+                const width = wrapper.clientWidth;
+                const height = wrapper.clientHeight;
+
+                // Scene setup
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(CONFIG.COLORS.background);
+                scene.fog = new THREE.Fog(CONFIG.COLORS.background, 5, 15);
+
+                // Camera setup
+                camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 100);
+                camera.position.set(0, 0, 5);
+
+                // Renderer setup
+                renderer = new THREE.WebGLRenderer({
+                    canvas: elements.canvas,
+                    antialias: true,
+                    alpha: false
+                });
+                renderer.setSize(width, height);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+                // Lighting
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+                scene.add(ambientLight);
+
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                directionalLight.position.set(5, 5, 5);
+                scene.add(directionalLight);
+
+                const backLight = new THREE.DirectionalLight(0xffffff, 0.3);
+                backLight.position.set(-5, -5, -5);
+                scene.add(backLight);
+
+                // Main shape - Icosahedron (20-sided polyhedron)
+                const geometry = new THREE.IcosahedronGeometry(1.2, 1);
+                const material = new THREE.MeshStandardMaterial({
+                    color: CONFIG.COLORS.idle,
+                    metalness: 0.3,
+                    roughness: 0.4,
+                    flatShading: true
+                });
+                mainShape = new THREE.Mesh(geometry, material);
+                scene.add(mainShape);
+
+                // Create particle system for ambiance
+                createParticles();
+
+                // Start animation loop
+                animate();
+            }
+
+            function createParticles() {
+                const particleCount = 100;
+                const positions = new Float32Array(particleCount * 3);
+                
+                for (let i = 0; i < particleCount; i++) {
+                    positions[i * 3] = (Math.random() - 0.5) * 20;
+                    positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
+                    positions[i * 3 + 2] = (Math.random() - 0.5) * 20;
+                }
+
+                const geometry = new THREE.BufferGeometry();
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+                const material = new THREE.PointsMaterial({
+                    color: 0x94A3B8,
+                    size: 0.05,
+                    transparent: true,
+                    opacity: 0.6
+                });
+
+                particles = new THREE.Points(geometry, material);
+                scene.add(particles);
+            }
+
+            // ------------------------------------------
+            // Animation Loop
+            // ------------------------------------------
+            function animate() {
+                animationFrameId = requestAnimationFrame(animate);
+
+                const time = performance.now() * 0.001;
+
+                // Rotate main shape based on state
+                if (mainShape) {
+                    const rotationSpeed = state.current === GameState.READY ? 0.03 : 0.01;
+                    mainShape.rotation.x += rotationSpeed;
+                    mainShape.rotation.y += rotationSpeed * 0.7;
+
+                    // Pulsing effect for ready state
+                    if (state.current === GameState.READY) {
+                        const scale = 1 + Math.sin(time * 8) * 0.1;
+                        mainShape.scale.setScalar(scale);
+                    } else if (state.current === GameState.WAITING) {
+                        const scale = 1 + Math.sin(time * 2) * 0.03;
+                        mainShape.scale.setScalar(scale);
+                    } else {
+                        mainShape.scale.setScalar(1);
+                    }
+                }
+
+                // Rotate particles slowly
+                if (particles) {
+                    particles.rotation.y += 0.0005;
+                    particles.rotation.x += 0.0002;
+                }
+
+                renderer.render(scene, camera);
+            }
+
+            // ------------------------------------------
+            // Window Resize Handler
+            // ------------------------------------------
+            function onWindowResize() {
+                const wrapper = elements.canvasWrapper;
+                const width = wrapper.clientWidth;
+                const height = wrapper.clientHeight;
+
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+                renderer.setSize(width, height);
+            }
+
+            // ------------------------------------------
+            // Game Logic Functions
+            // ------------------------------------------
+            function setState(newState) {
+                state.current = newState;
+                updateUI();
+                updateShapeColor();
+            }
+
+            function updateShapeColor() {
+                if (!mainShape) return;
+
+                const colorMap = {
+                    [GameState.IDLE]: CONFIG.COLORS.idle,
+                    [GameState.WAITING]: CONFIG.COLORS.waiting,
+                    [GameState.READY]: CONFIG.COLORS.ready,
+                    [GameState.RESULT]: CONFIG.COLORS.result,
+                    [GameState.FALSE_START]: CONFIG.COLORS.error
+                };
+
+                const targetColor = new THREE.Color(colorMap[state.current]);
+                mainShape.material.color.copy(targetColor);
+
+                // Update emissive for glow effect
+                if (state.current === GameState.READY) {
+                    mainShape.material.emissive = new THREE.Color(CONFIG.COLORS.ready);
+                    mainShape.material.emissiveIntensity = 0.3;
+                } else {
+                    mainShape.material.emissive = new THREE.Color(0x000000);
+                    mainShape.material.emissiveIntensity = 0;
+                }
+            }
+
+            function updateUI() {
+                const messages = {
+                    [GameState.IDLE]: {
+                        message: 'Click "Start Game" to begin',
+                        hint: 'Your reaction time will be measured in milliseconds',
+                        messageClass: ''
+                    },
+                    [GameState.WAITING]: {
+                        message: 'Wait for green...',
+                        hint: 'Get ready to click!',
+                        messageClass: ''
+                    },
+                    [GameState.READY]: {
+                        message: 'CLICK NOW!',
+                        hint: 'As fast as you can!',
+                        messageClass: ''
+                    },
+                    [GameState.RESULT]: {
+                        message: `<span class="reaction-time">${state.reactionTime}</span><span class="reaction-unit"> ms</span>`,
+                        hint: getPerformanceMessage(state.reactionTime),
+                        messageClass: 'pulse'
+                    },
+                    [GameState.FALSE_START]: {
+                        message: '<span class="false-start-message">Too Early!</span>',
+                        hint: 'Wait for the shape to turn green before clicking',
+                        messageClass: ''
+                    }
+                };
+
+                const config = messages[state.current];
+                elements.stateMessage.innerHTML = config.message;
+                elements.stateHint.textContent = config.hint;
+                elements.stateMessage.className = `state-message ${config.messageClass}`;
+
+                // Update button states
+                const isPlaying = state.current === GameState.WAITING || state.current === GameState.READY;
+                elements.startBtn.disabled = isPlaying;
+                elements.startBtn.innerHTML = isPlaying ? 
+                    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <rect x="6" y="4" width="4" height="16"></rect>
+                        <rect x="14" y="4" width="4" height="16"></rect>
+                    </svg>
+                    Playing...` :
+                    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Start Game`;
+
+                elements.resetBtn.disabled = state.attempts === 0;
+            }
+
+            function getPerformanceMessage(time) {
+                if (time < CONFIG.THRESHOLDS.excellent) return '🔥 Incredible reflexes!';
+                if (time < CONFIG.THRESHOLDS.good) return '⚡ Excellent reaction!';
+                if (time < CONFIG.THRESHOLDS.average) return '👍 Good job!';
+                return '💪 Keep practicing!';
+            }
+
+            function getTimeCategory(time) {
+                if (time < CONFIG.THRESHOLDS.excellent) return 'good';
+                if (time < CONFIG.THRESHOLDS.average) return 'average';
+                return 'slow';
+            }
+
+            function startGame() {
+                if (state.current === GameState.WAITING || state.current === GameState.READY) {
+                    return;
+                }
+
+                // Clear any existing timeout
+                if (state.timeoutId) {
+                    clearTimeout(state.timeoutId);
+                }
+
+                setState(GameState.WAITING);
+
+                // Random delay between 1-5 seconds
+                const delay = Math.random() * (CONFIG.DELAY_MAX - CONFIG.DELAY_MIN) + CONFIG.DELAY_MIN;
+
+                state.timeoutId = setTimeout(() => {
+                    setState(GameState.READY);
+                    state.startTime = performance.now();
+                }, delay);
+            }
+
+            function handleClick() {
+                switch (state.current) {
+                    case GameState.WAITING:
+                        // False start - clicked too early
+                        clearTimeout(state.timeoutId);
+                        setState(GameState.FALSE_START);
+                        break;
+
+                    case GameState.READY:
+                        // Valid click - calculate reaction time
+                        state.reactionTime = Math.round(performance.now() - state.startTime);
+                        recordAttempt(state.reactionTime);
+                        setState(GameState.RESULT);
+                        break;
+
+                    case GameState.RESULT:
+                    case GameState.FALSE_START:
+                        // Start a new game
+                        startGame();
+                        break;
+                }
+            }
+
+            function recordAttempt(time) {
+                state.attempts++;
+                state.totalTime += time;
+                
+                if (time < state.bestTime) {
+                    state.bestTime = time;
+                }
+
+                state.history.unshift(time);
+                if (state.history.length > 10) {
+                    state.history.pop();
+                }
+
+                updateStats();
+                updateHistory();
+            }
+
+            function updateStats() {
+                elements.attemptsDisplay.textContent = state.attempts;
+                
+                if (state.bestTime !== Infinity) {
+                    elements.bestTimeDisplay.textContent = `${state.bestTime} ms`;
+                }
+
+                if (state.attempts > 0) {
+                    const average = Math.round(state.totalTime / state.attempts);
+                    elements.avgTimeDisplay.textContent = `${average} ms`;
+                }
+            }
+
+            function updateHistory() {
+                if (state.history.length === 0) {
+                    elements.historyList.innerHTML = '<p class="empty-history">No attempts yet. Start playing to see your history!</p>';
+                    return;
+                }
+
+                elements.historyList.innerHTML = state.history
+                    .map(time => {
+                        const category = getTimeCategory(time);
+                        return `<span class="history-item ${category}">${time} ms</span>`;
+                    })
+                    .join('');
+            }
+
+            function resetStats() {
+                if (state.timeoutId) {
+                    clearTimeout(state.timeoutId);
+                }
+
+                state.attempts = 0;
+                state.bestTime = Infinity;
+                state.totalTime = 0;
+                state.history = [];
+                state.reactionTime = 0;
+
+                elements.attemptsDisplay.textContent = '0';
+                elements.bestTimeDisplay.textContent = '— ms';
+                elements.avgTimeDisplay.textContent = '— ms';
+                
+                updateHistory();
+                setState(GameState.IDLE);
+            }
+
+            // ------------------------------------------
+            // Event Listeners
+            // ------------------------------------------
+            function setupEventListeners() {
+                elements.startBtn.addEventListener('click', startGame);
+                elements.resetBtn.addEventListener('click', resetStats);
+                elements.canvasWrapper.addEventListener('click', handleClick);
+
+                // Handle touch events for mobile
+                elements.canvasWrapper.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    handleClick();
+                }, { passive: false });
+
+                // Keyboard support
+                document.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space' || e.code === 'Enter') {
+                        e.preventDefault();
+                        if (state.current === GameState.IDLE) {
+                            startGame();
+                        } else {
+                            handleClick();
+                        }
+                    }
+                });
+
+                // Window resize
+                window.addEventListener('resize', onWindowResize);
+
+                // Cleanup on page unload
+                window.addEventListener('beforeunload', () => {
+                    if (animationFrameId) {
+                        cancelAnimationFrame(animationFrameId);
+                    }
+                    if (state.timeoutId) {
+                        clearTimeout(state.timeoutId);
+                    }
+                });
+            }
+
+            // ------------------------------------------
+            // Initialization
+            // ------------------------------------------
+            function init() {
+                try {
+                    initThreeJS();
+                    setupEventListeners();
+                    updateUI();
+                } catch (error) {
+                    console.error('Failed to initialize game:', error);
+                    elements.canvasWrapper.innerHTML = `
+                        <div class="loading">
+                            <p>Failed to initialize 3D graphics. Please refresh the page.</p>
+                        </div>
+                    `;
+                }
+            }
+
+            // Start the application when DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+        })();
+    </script>
+</body>
+</html>
