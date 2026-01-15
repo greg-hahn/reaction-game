@@ -94,25 +94,6 @@ reaction-timer/
 | Result | Blue | Displaying reaction time |
 | False Start | Red | Clicked too early |
 
-## 🎨 Design System
-
-### Colors
-
-| Purpose | Hex | Preview |
-|---------|-----|---------|
-| Background | `#0F172A` | ![#0F172A](https://via.placeholder.com/20/0F172A/0F172A) |
-| Surface | `#1E293B` | ![#1E293B](https://via.placeholder.com/20/1E293B/1E293B) |
-| Primary Text | `#F1F5F9` | ![#F1F5F9](https://via.placeholder.com/20/F1F5F9/F1F5F9) |
-| Ready State | `#10B981` | ![#10B981](https://via.placeholder.com/20/10B981/10B981) |
-| Waiting State | `#F59E0B` | ![#F59E0B](https://via.placeholder.com/20/F59E0B/F59E0B) |
-| Results | `#3B82F6` | ![#3B82F6](https://via.placeholder.com/20/3B82F6/3B82F6) |
-| Error | `#EF4444` | ![#EF4444](https://via.placeholder.com/20/EF4444/EF4444) |
-
-### Typography
-
-- **Headings:** Outfit (500-700 weight)
-- **Body:** Inter (400-600 weight)
-
 ## 📱 Browser Support
 
 - Chrome 80+
