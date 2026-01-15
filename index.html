@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reaction Timer | 3D Interactive Game</title>
+    <link rel="icon" type="image/png" href="favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
@@ -237,6 +238,17 @@
             background: var(--bg-surface);
             border-radius: 1rem;
             padding: 1.5rem;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .instructions.hidden {
+            opacity: 0;
+            transform: translateY(-10px);
+            pointer-events: none;
+            height: 0;
+            padding: 0;
+            margin: 0;
+            overflow: hidden;
         }
 
         .instructions h2 {
@@ -482,7 +494,7 @@
             </div>
         </section>
 
-        <section class="instructions">
+        <section class="instructions" id="instructions-section">
             <h2>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"></circle>
@@ -605,7 +617,8 @@
                 attemptsDisplay: document.getElementById('attempts'),
                 bestTimeDisplay: document.getElementById('best-time'),
                 avgTimeDisplay: document.getElementById('avg-time'),
-                historyList: document.getElementById('history-list')
+                historyList: document.getElementById('history-list'),
+                instructionsSection: document.getElementById('instructions-section')
             };
 
             // ------------------------------------------
@@ -890,8 +903,25 @@
                     state.history.pop();
                 }
 
+                // Hide instructions after first successful attempt
+                if (state.attempts === 1) {
+                    hideInstructions();
+                }
+
                 updateStats();
                 updateHistory();
+            }
+
+            function hideInstructions() {
+                if (elements.instructionsSection) {
+                    elements.instructionsSection.classList.add('hidden');
+                }
+            }
+
+            function showInstructions() {
+                if (elements.instructionsSection) {
+                    elements.instructionsSection.classList.remove('hidden');
+                }
             }
 
             function updateStats() {
@@ -937,6 +967,7 @@
                 elements.avgTimeDisplay.textContent = '— ms';
                 
                 updateHistory();
+                showInstructions();
                 setState(GameState.IDLE);
             }
 
